@@ -30,8 +30,9 @@ class Login(View):
                 roll_no=roll_no,
                 password=password
             )
-            redirect('customer/index.html')
-        
+            return redirect('index')
+        else:
+            pass
 
 class Index(View):
     def get(self, request, *args, **kwargs):
