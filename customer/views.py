@@ -3,7 +3,8 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.db.models import Q
 from django.core.mail import send_mail
-from .models import MenuItem, Category, OrderModel,Restaurant
+from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
+from .models import MenuItem, Category, OrderModel,Restaurant,Student,Hostel
 
 
 class Index(View):
@@ -15,7 +16,7 @@ class Index(View):
         return render(request, 'customer/index.html',context)
 
     def post(self, request, *args, **kwargs):
-
+        
         items = request.POST.get('r_options')
         # rpk = Restaurant.objects.get(pk = items)
         return redirect('order', pk = items)
