@@ -7,6 +7,32 @@ from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from .models import MenuItem, Category, OrderModel,Restaurant,Student,Hostel
 
 
+class Login(View):
+    def get(self , request, *args, **kwargs):
+        hostels = Hostel.objects.all()
+        context = {
+            'hostels': hostels
+        }
+        return render(request, 'customer/login.html', context)
+    
+    def post(self , request, *args, **kwargs):
+        name = request.POST.get('name')
+        roll_no = request.POST.get('roll_no')
+        password = request.POST.get('password')
+        hostel_id = request.POST.get('hostel')
+        hostel = Hostel.objects.get(pk=hostel_id)
+
+        student_list = Student.objects.filter(roll_no=roll_no)
+        if not student_list:
+            NewStudent = Student.objects.create(
+                name=name,
+                block=hostel,
+                roll_no=roll_no,
+                password=password
+            )
+            redirect('customer/index.html')
+        
+
 class Index(View):
     def get(self, request, *args, **kwargs):
         restaurants = Restaurant.objects.all()

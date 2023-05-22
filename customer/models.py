@@ -28,6 +28,7 @@ class Student(models.Model):
     name = models.CharField(max_length=100)
     block = models.ForeignKey('Hostel', on_delete = models.CASCADE)
     roll_no = models.CharField(max_length=100)
+    password = models.CharField(max_length=100 , default='CNBT')
     def __str__(self):
         return self.name
 
