@@ -5,10 +5,14 @@ from django.db.models import Q
 from django.core.mail import send_mail
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from .models import MenuItem, Category, OrderModel,Restaurant,Student,Hostel
+from django.contrib import sessions
 
 
 class Login(View):
     def get(self , request, *args, **kwargs):
+        student = request.session.get('student')
+        if student:
+            del request.session['student']    
         hostels = Hostel.objects.all()
         context = {
             'hostels': hostels
@@ -22,17 +26,30 @@ class Login(View):
         hostel_id = request.POST.get('hostel')
         hostel = Hostel.objects.get(pk=hostel_id)
 
-        student_list = Student.objects.filter(roll_no=roll_no)
-        if not student_list:
-            NewStudent = Student.objects.create(
-                name=name,
-                block=hostel,
-                roll_no=roll_no,
-                password=password
-            )
-            return redirect('index')
-        else:
-            pass
+        try:
+            student_list = Student.objects.get(roll_no=roll_no)
+                
+            if not student_list:
+                NewStudent = Student.objects.create(
+                    name=name,
+                    block=hostel,
+                    roll_no=roll_no,
+                    password=password
+                )
+                NewStudent.save()
+                request.session['student'] = NewStudent.pk
+                return redirect('index')
+            else:
+                if student_list.password == password:
+                    request.session['student'] = student_list.pk
+                    return redirect('index')
+                else:   
+                    error_message = "Incorrect password"
+
+        except Student.DoesNotExist:
+            error_message = "Student not found"
+
+        return render(request, 'login.html', {'error_message': error_message, 'form': form})
 
 class Index(View):
     def get(self, request, *args, **kwargs):
@@ -78,6 +95,8 @@ class Order(View):
         name = request.POST.get('name')
         roll_no = request.POST.get('roll_no')
         street = request.POST.get('street')
+        student = request.session.get('student')
+        student = Student.objects.get(pk = student)
         # data = get_context_data(**kwargs)
         print(args)
         order_items = {
@@ -105,10 +124,11 @@ class Order(View):
 
         order = OrderModel.objects.create(
             price=price,
-            name=name,
-            roll_no = roll_no,
-            street=street,
-            restaurant= restaurant
+            name=student.name,
+            roll_no = student.roll_no,
+            street=student.block,
+            restaurant= restaurant,
+            student = student
         )
         order.items.add(*item_ids)
 

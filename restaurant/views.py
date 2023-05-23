@@ -40,7 +40,8 @@ class OrderDetails(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         order = OrderModel.objects.get(pk=pk)
         context = {
-            'order': order
+            'order': order,
+            'items'  : order.items
         }
 
         return render(request, 'restaurant/order-details.html', context)
