@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'customer/base.html' %}
 
 {% block content %}
 
@@ -30,6 +30,11 @@
                 <p><i style="color: red;" class="fas fa-times"></i><span class="pl-2">Order Has Not Been Paid</span></p>
                 {% endif %}</p>
                 {% if order.is_shipped %}
+                <p><i style="color: green;" class="fas fa-check"></i><span class="pl-2">Order Has Been Shipped!</span></p>
+                {% else %}
+                <p><i style="color: red;" class="fas fa-times"></i><span class="pl-2">Order Has Not Been Paid</span></p>
+                {% endif %}</p>
+                {% if order.is_delivered %}
                 <p><i style="color: green;" class="fas fa-check"></i><span class="pl-2">Order Has Been Delivered!</span></p>
                 {% else %}
                 <form method="POST">

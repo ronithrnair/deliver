@@ -24,32 +24,49 @@ class Login(View):
         roll_no = request.POST.get('roll_no')
         password = request.POST.get('password')
         hostel_id = request.POST.get('hostel')
-        hostel = Hostel.objects.get(pk=hostel_id)
-
-        try:
-            student_list = Student.objects.get(roll_no=roll_no)
-                
-            if not student_list:
-                NewStudent = Student.objects.create(
-                    name=name,
-                    block=hostel,
-                    roll_no=roll_no,
-                    password=password
-                )
-                NewStudent.save()
-                request.session['student'] = NewStudent.pk
+        hostel = Hostel.objects.get(pk=hostel_id)   
+        if not Student.objects.filter(roll_no=roll_no):
+            NewStudent = Student.objects.create(
+                name=name,
+                block=hostel,
+                roll_no=roll_no,
+                password=password
+            )
+            request.session['student'] = NewStudent.pk
+            NewStudent.save()
+            return redirect('index')
+        else:
+            student_list = Student.objects.get(roll_no=roll_no)  
+            print(student_list)
+            if student_list.password == password:
+                request.session['student'] = student_list.pk
                 return redirect('index')
-            else:
-                if student_list.password == password:
-                    request.session['student'] = student_list.pk
-                    return redirect('index')
-                else:   
-                    error_message = "Incorrect password"
+            else:   
+                print("Incorrect password")
 
-        except Student.DoesNotExist:
-            error_message = "Student not found"
+        # try:
+        #     student_list = Student.objects.get(roll_no=roll_no)
+                
+        #     if not student_list:
+        #         NewStudent = Student.objects.create(
+        #             name=name,
+        #             block=hostel,
+        #             roll_no=roll_no,
+        #             password=password
+        #         )
+        #         # NewStudent.save()
+        #         request.session['student'] = NewStudent.pk
+        #         return redirect('index')
+        #     else:
+        #         if student_list.password == password:
+        #             request.session['student'] = student_list.pk
+        #             return redirect('index')
+        #         else:   
+        #             error_message = "Incorrect password"
 
-        return render(request, 'login.html', {'error_message': error_message, 'form': form})
+        # except Student.DoesNotExist:
+        #     error_message = "Student not found"
+        return render(request, 'customer/login.html')
 
 class Index(View):
     def get(self, request, *args, **kwargs):
@@ -71,7 +88,11 @@ class Index(View):
         return redirect('order', pk = items)
 class About(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'customer/about.html')
+        student = request.session['student']
+        context = {
+            'student' : Student.objects.get(pk = student).name
+        }
+        return render(request, 'customer/about.html',context)
 
 
 class Order(View):
@@ -81,7 +102,7 @@ class Order(View):
         mains = MenuItem.objects.filter(restaurant__pk = pk).filter(category__name__contains='Main')
         desserts = MenuItem.objects.filter(restaurant__pk = pk).filter(category__name__contains='Dessert')
         beverages = MenuItem.objects.filter(restaurant__pk = pk).filter(category__name__contains='Beverages')
-
+        student = request.session['student']
         # pass into context
         context = {
             'id' : pk,
@@ -89,6 +110,7 @@ class Order(View):
             'mains': mains,
             'desserts': desserts,
             'beverages': beverages,
+            'student' : Student.objects.get(pk = student).name
         }
 
         # render the template
@@ -161,11 +183,13 @@ class Order(View):
 class OrderConfirmation(View):
     def get(self, request, pk, *args, **kwargs):
         order = OrderModel.objects.get(pk=pk)
+        student = request.session.get('student')
 
         context = {
             'pk': order.pk,
             'items': order.items,
             'price': order.price,
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/order_confirmation.html', context)
@@ -183,24 +207,27 @@ class OrderConfirmation(View):
 
 class OrderPayConfirmation(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'customer/order_pay_confirmation.html')
+        student = request.session.get('student')
+        return render(request, 'customer/order_pay_confirmation.html',{'student' : Student.objects.get(pk = student).name})
 
 
 class Menu(View):
     def get(self, request, *args, **kwargs):
         menu_items = MenuItem.objects.all()
-
+        student = request.session.get('student')
         context = {
-            'menu_items': menu_items
+            'menu_items': menu_items,
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/menu.html', context)
 
 
 class MenuSearch(View):
+
     def get(self, request, *args, **kwargs):
         query = self.request.GET.get("q")
-
+        student = request.session['student']
         menu_items = MenuItem.objects.filter(
             Q(name__icontains=query) |
             Q(price__icontains=query) |
@@ -208,7 +235,8 @@ class MenuSearch(View):
         )
 
         context = {
-            'menu_items': menu_items
+            'menu_items': menu_items,
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/menu.html', context)
@@ -229,7 +257,8 @@ class UserDashboard(View):
         context = {
             'orders': unshipped_orders,
             'total_revenue': total_revenue,
-            'total_orders': len(orders)
+            'total_orders': len(orders),
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/userdashboard.html', context)
@@ -239,11 +268,14 @@ class UserDashboard(View):
 
 
 class CustomerOrderDetails(View):
+
     def get(self, request, pk, *args, **kwargs):
+        student = request.session['student']
         order = OrderModel.objects.get(pk=pk)
         context = {
             'order': order,
-            'items'  : order.items
+            'items'  : order.items,
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/customer-order-details.html', context)

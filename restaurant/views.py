@@ -12,8 +12,7 @@ class Dashboard(LoginRequiredMixin,View):
         if request.user.is_authenticated:
             username = request.user.username
         today = datetime.today()
-        orders = OrderModel.objects.filter(restaurant__uname = username).filter(
-            created_on__year=today.year, created_on__month=today.month, created_on__day=today.day)
+        orders = OrderModel.objects.filter(restaurant__uname = username)
 
         # loop through the orders and add the price value, check if order is not shipped
         unshipped_orders = []
