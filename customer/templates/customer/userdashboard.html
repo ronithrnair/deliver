@@ -1,15 +1,15 @@
-{% extends 'restaurant/base.html' %}
+{% extends 'customer/base.html' %}
 
 {% block content %}
     <div class="container">
         <div class="row justify-content-center mt-3">
             <div class="card col-md-5 mr-3">
-                <h4 class="text-center pt-2">Today's Total Spent</h4>
+                <h4 class="text-center pt-2">Total Spend</h4>
                 <h1 class="text-center" style="color: green;">${{ total_revenue }}</h1>
             </div>
 
             <div class="card col-md-5 mr-3">
-                <h4 class="text-center pt-2">Today's Total Orders</h4>
+                <h4 class="text-center pt-2">Total Orders</h4>
                 <h1 class="text-center" style="color: blue;">{{ total_orders }}</h1>
             </div>
         </div>
@@ -21,7 +21,7 @@
                         <tr>
                             <th scope="col">Order ID</th>
                             <th scope="col">Price</th>
-                            <th scope="col">Name</th>
+                            <th scope="col">Restaurant</th>
                             <th scope="col">Block</th>
                             <th scope="col">Paid</th>
                             <th scope="col">Shipped</th>
@@ -61,7 +61,7 @@
                                 {% endif %}
 
                             </td>
-                            <td><a href="{% url 'order-details' order.pk %}"><i class="far fa-edit"></i></a></td>
+                            <td><a href="{% url 'customer-order-details' order.pk %}"><i class="far fa-edit"></i></a></td>
                         </tr>
                         {% endfor %}
                     </tbody>

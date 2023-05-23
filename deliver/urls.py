@@ -17,12 +17,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from customer.views import Index, About, Order, OrderConfirmation, OrderPayConfirmation, Menu, MenuSearch, Login, UserDashboard
+from customer.views import Index, About, Order, OrderConfirmation, OrderPayConfirmation, Menu, MenuSearch, Login, UserDashboard, CustomerOrderDetails
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('restaurant/', include('restaurant.urls')),
+    path('orders/<int:pk>/', CustomerOrderDetails.as_view(), name='customer-order-details'),
     # path('userdashboard/',UserDashboard.as_view(), name='userdashboard'),
     path('', Index.as_view(), name='index'),
     path('about/', About.as_view(), name='about'),

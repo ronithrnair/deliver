@@ -56,7 +56,10 @@ class Index(View):
         if not request.session or not request.session.get('student'):
             return redirect('login')
         restaurants = Restaurant.objects.all()
+        student = request.session.get('student')
+        student_name = Student.objects.get(pk=student).name
         context = {
+            'student' : student_name,
             'restaurants' : restaurants
         }
         return render(request, 'customer/index.html',context)
@@ -220,8 +223,7 @@ class UserDashboard(View):
         total_revenue = 0
         for order in orders:
             total_revenue += order.price
-            if not order.is_delivered:
-                unshipped_orders.append(order)
+            unshipped_orders.append(order)
 
         # pass total number of orders and total revenue into template
         context = {
@@ -234,3 +236,29 @@ class UserDashboard(View):
 
     def test_func(self):
         return self.request.user.groups.filter(name='Staff').exists()
+
+
+class CustomerOrderDetails(View):
+    def get(self, request, pk, *args, **kwargs):
+        order = OrderModel.objects.get(pk=pk)
+        context = {
+            'order': order,
+            'items'  : order.items
+        }
+
+        return render(request, 'customer/customer-order-details.html', context)
+
+    def post(self, request, pk, *args, **kwargs):
+        order = OrderModel.objects.get(pk=pk)
+        order.is_delivered = True
+        order.save()
+
+        context = {
+            'order': order
+        }
+
+        return redirect('userdashboard')
+
+    '''def test_func(self):
+        return self.request.user.groups.filter(name='Staff').exists()
+    '''

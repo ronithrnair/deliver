@@ -3,16 +3,16 @@
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
-  <div class="collapse navbar-collapse" id="navbarNav">
+  <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
     <ul class="navbar-nav mr-auto">
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'about' %}">About Us</span></a>
+        <a class="nav-link" href="{% url 'about' %}">About Us</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="{% url 'menu' %}">Menu</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'userdashboard' %}">Your Dashboard</a>
+        <a class="nav-link" href="{% url 'userdashboard' %}">{{ student }}'s Dashboard</a>
       </li>
     </ul>
     <ul class="navbar-nav">
@@ -20,7 +20,7 @@
         <a class="nav-link" href="{% url 'index' %}">Place an Order!</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'login' %}">Customer Login/Sign Up!</a>
+        <a class="nav-link" href="{% url 'login' %}">Sign Out</a>
       </li>
     </ul>
   </div>
