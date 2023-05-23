@@ -53,6 +53,8 @@ class Login(View):
 
 class Index(View):
     def get(self, request, *args, **kwargs):
+        if not request.session or not request.session.get('student'):
+            return redirect('login')
         restaurants = Restaurant.objects.all()
         context = {
             'restaurants' : restaurants
@@ -207,3 +209,28 @@ class MenuSearch(View):
         }
 
         return render(request, 'customer/menu.html', context)
+
+class UserDashboard(View):
+    def get(self, request, *args, **kwargs):
+        student = request.session['student']
+        orders = OrderModel.objects.filter(student__pk=student)
+
+        # loop through the orders and add the price value, check if order is not shipped
+        unshipped_orders = []
+        total_revenue = 0
+        for order in orders:
+            total_revenue += order.price
+            if not order.is_delivered:
+                unshipped_orders.append(order)
+
+        # pass total number of orders and total revenue into template
+        context = {
+            'orders': unshipped_orders,
+            'total_revenue': total_revenue,
+            'total_orders': len(orders)
+        }
+
+        return render(request, 'customer/userdashboard.html', context)
+
+    def test_func(self):
+        return self.request.user.groups.filter(name='Staff').exists()
