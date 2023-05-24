@@ -1,3 +1,5 @@
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 import json
 from django.shortcuts import render, redirect
 from django.views import View
@@ -24,13 +26,19 @@ class Login(View):
         roll_no = request.POST.get('roll_no')
         password = request.POST.get('password')
         hostel_id = request.POST.get('hostel')
+        key = b'delivereats12345'
+        password_bytes = password.encode()
+        cipher = AES.new(key , AES.MODE_ECB)
+        pad_password = pad(password_bytes , AES.block_size)
+        ciphertext = cipher.encrypt(pad_password)
+        password_hex = ciphertext.hex()
         hostel = Hostel.objects.get(pk=hostel_id)   
         if not Student.objects.filter(roll_no=roll_no):
             NewStudent = Student.objects.create(
                 name=name,
                 block=hostel,
                 roll_no=roll_no,
-                password=password
+                password=password_hex
             )
             request.session['student'] = NewStudent.pk
             NewStudent.save()
@@ -38,34 +46,11 @@ class Login(View):
         else:
             student_list = Student.objects.get(roll_no=roll_no)  
             print(student_list)
-            if student_list.password == password:
+            if student_list.password == password_hex:
                 request.session['student'] = student_list.pk
                 return redirect('index')
             else:   
                 print("Incorrect password")
-
-        # try:
-        #     student_list = Student.objects.get(roll_no=roll_no)
-                
-        #     if not student_list:
-        #         NewStudent = Student.objects.create(
-        #             name=name,
-        #             block=hostel,
-        #             roll_no=roll_no,
-        #             password=password
-        #         )
-        #         # NewStudent.save()
-        #         request.session['student'] = NewStudent.pk
-        #         return redirect('index')
-        #     else:
-        #         if student_list.password == password:
-        #             request.session['student'] = student_list.pk
-        #             return redirect('index')
-        #         else:   
-        #             error_message = "Incorrect password"
-
-        # except Student.DoesNotExist:
-        #     error_message = "Student not found"
         return render(request, 'customer/login.html')
 
 class Index(View):
