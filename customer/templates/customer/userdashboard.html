@@ -1,16 +1,16 @@
-{% extends 'restaurant/base.html' %}
+{% extends 'customer/base.html' %}
 
 {% block content %}
     <div class="container">
         <div class="row justify-content-center mt-3">
             <div class="card col-md-5 mr-3">
-                <h4 class="text-center pt-2">Today's Total Revenue</h4>
+                <h4 class="text-center pt-2">Total Spend</h4>
                 <h1 class="text-center" style="color: green;">${{ total_revenue }}</h1>
             </div>
 
             <div class="card col-md-5 mr-3">
-                <h4 class="text-center pt-2">Today's Total Orders</h4>
-                <h1 class="text-center" style="color: #ad0003;">{{ total_orders }}</h1>
+                <h4 class="text-center pt-2">Total Orders</h4>
+                <h1 class="text-center" style="color: blue;">{{ total_orders }}</h1>
             </div>
         </div>
 
@@ -21,12 +21,11 @@
                         <tr>
                             <th scope="col">Order ID</th>
                             <th scope="col">Price</th>
-                            <th scope="col">Name</th>
-                            <th scope="col">Roll No</th>
+                            <th scope="col">Restaurant</th>
                             <th scope="col">Block</th>
-                            <th scope="col">Is Paid?</th>
-                            <th scope="col">Is Shipped?</th>
-                            <th scope="col">Is Delivered?</th>
+                            <th scope="col">Paid</th>
+                            <th scope="col">Shipped</th>
+                            <th scope="col">Delivered</th>
                             <th scope="col">Details</th>
                         </tr>
                     </thead>
@@ -36,8 +35,7 @@
                         <tr>
                             <th scope="row">{{ order.pk }}</th>
                             <td>{{ order.price }}</td>
-                            <td>{{ order.name }}</td>
-                            <td>{{ order.roll_no }}</td>
+                            <td>{{ order.restaurant.restaurant_name }}</td>
                             <td>{{ order.street }}</td>
                             <td>
                                 {% if order.is_paid %}
@@ -63,7 +61,7 @@
                                 {% endif %}
 
                             </td>
-                            <td><a href="{% url 'order-details' order.pk %}"><i class="far fa-edit"></i></a></td>
+                            <td><a href="{% url 'customer-order-details' order.pk %}"><i class="far fa-edit"></i></a></td>
                         </tr>
                         {% endfor %}
                     </tbody>

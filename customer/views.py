@@ -1,3 +1,5 @@
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 import json
 from django.shortcuts import render, redirect
 from django.views import View
@@ -5,12 +7,61 @@ from django.db.models import Q
 from django.core.mail import send_mail
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from .models import MenuItem, Category, OrderModel,Restaurant,Student,Hostel
+from django.contrib import sessions
 
+
+class Login(View):
+    def get(self , request, *args, **kwargs):
+        student = request.session.get('student')
+        if student:
+            del request.session['student']    
+        hostels = Hostel.objects.all()
+        context = {
+            'hostels': hostels
+        }
+        return render(request, 'customer/login.html', context)
+    
+    def post(self , request, *args, **kwargs):
+        name = request.POST.get('name')
+        roll_no = request.POST.get('roll_no')
+        password = request.POST.get('password')
+        hostel_id = request.POST.get('hostel')
+        key = b'delivereats12345'
+        password_bytes = password.encode()
+        cipher = AES.new(key , AES.MODE_ECB)
+        pad_password = pad(password_bytes , AES.block_size)
+        ciphertext = cipher.encrypt(pad_password)
+        password_hex = ciphertext.hex()
+        hostel = Hostel.objects.get(pk=hostel_id)   
+        if not Student.objects.filter(roll_no=roll_no):
+            NewStudent = Student.objects.create(
+                name=name,
+                block=hostel,
+                roll_no=roll_no,
+                password=password_hex
+            )
+            request.session['student'] = NewStudent.pk
+            NewStudent.save()
+            return redirect('index')
+        else:
+            student_list = Student.objects.get(roll_no=roll_no)  
+            print(student_list)
+            if student_list.password == password_hex:
+                request.session['student'] = student_list.pk
+                return redirect('index')
+            else:   
+                print("Incorrect password")
+        return render(request, 'customer/login.html')
 
 class Index(View):
     def get(self, request, *args, **kwargs):
+        if not request.session or not request.session.get('student'):
+            return redirect('login')
         restaurants = Restaurant.objects.all()
+        student = request.session.get('student')
+        student_name = Student.objects.get(pk=student).name
         context = {
+            'student' : student_name,
             'restaurants' : restaurants
         }
         return render(request, 'customer/index.html',context)
@@ -22,7 +73,11 @@ class Index(View):
         return redirect('order', pk = items)
 class About(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'customer/about.html')
+        student = request.session['student']
+        context = {
+            'student' : Student.objects.get(pk = student).name
+        }
+        return render(request, 'customer/about.html',context)
 
 
 class Order(View):
@@ -32,7 +87,7 @@ class Order(View):
         mains = MenuItem.objects.filter(restaurant__pk = pk).filter(category__name__contains='Main')
         desserts = MenuItem.objects.filter(restaurant__pk = pk).filter(category__name__contains='Dessert')
         beverages = MenuItem.objects.filter(restaurant__pk = pk).filter(category__name__contains='Beverages')
-
+        student = request.session['student']
         # pass into context
         context = {
             'id' : pk,
@@ -40,6 +95,7 @@ class Order(View):
             'mains': mains,
             'desserts': desserts,
             'beverages': beverages,
+            'student' : Student.objects.get(pk = student).name
         }
 
         # render the template
@@ -51,6 +107,8 @@ class Order(View):
         name = request.POST.get('name')
         roll_no = request.POST.get('roll_no')
         street = request.POST.get('street')
+        student = request.session.get('student')
+        student = Student.objects.get(pk = student)
         # data = get_context_data(**kwargs)
         print(args)
         order_items = {
@@ -78,10 +136,11 @@ class Order(View):
 
         order = OrderModel.objects.create(
             price=price,
-            name=name,
-            roll_no = roll_no,
-            street=street,
-            restaurant= restaurant
+            name=student.name,
+            roll_no = student.roll_no,
+            street=student.block,
+            restaurant= restaurant,
+            student = student
         )
         order.items.add(*item_ids)
 
@@ -109,11 +168,13 @@ class Order(View):
 class OrderConfirmation(View):
     def get(self, request, pk, *args, **kwargs):
         order = OrderModel.objects.get(pk=pk)
+        student = request.session.get('student')
 
         context = {
             'pk': order.pk,
             'items': order.items,
             'price': order.price,
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/order_confirmation.html', context)
@@ -131,24 +192,27 @@ class OrderConfirmation(View):
 
 class OrderPayConfirmation(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'customer/order_pay_confirmation.html')
+        student = request.session.get('student')
+        return render(request, 'customer/order_pay_confirmation.html',{'student' : Student.objects.get(pk = student).name})
 
 
 class Menu(View):
     def get(self, request, *args, **kwargs):
         menu_items = MenuItem.objects.all()
-
+        student = request.session.get('student')
         context = {
-            'menu_items': menu_items
+            'menu_items': menu_items,
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/menu.html', context)
 
 
 class MenuSearch(View):
+
     def get(self, request, *args, **kwargs):
         query = self.request.GET.get("q")
-
+        student = request.session['student']
         menu_items = MenuItem.objects.filter(
             Q(name__icontains=query) |
             Q(price__icontains=query) |
@@ -156,7 +220,62 @@ class MenuSearch(View):
         )
 
         context = {
-            'menu_items': menu_items
+            'menu_items': menu_items,
+            'student' : Student.objects.get(pk = student).name
         }
 
         return render(request, 'customer/menu.html', context)
+
+class UserDashboard(View):
+    def get(self, request, *args, **kwargs):
+        student = request.session['student']
+        orders = OrderModel.objects.filter(student__pk=student)
+
+        # loop through the orders and add the price value, check if order is not shipped
+        unshipped_orders = []
+        total_revenue = 0
+        for order in orders:
+            total_revenue += order.price
+            unshipped_orders.append(order)
+
+        # pass total number of orders and total revenue into template
+        context = {
+            'orders': unshipped_orders,
+            'total_revenue': total_revenue,
+            'total_orders': len(orders),
+            'student' : Student.objects.get(pk = student).name
+        }
+
+        return render(request, 'customer/userdashboard.html', context)
+
+    def test_func(self):
+        return self.request.user.groups.filter(name='Staff').exists()
+
+
+class CustomerOrderDetails(View):
+
+    def get(self, request, pk, *args, **kwargs):
+        student = request.session['student']
+        order = OrderModel.objects.get(pk=pk)
+        context = {
+            'order': order,
+            'items'  : order.items,
+            'student' : Student.objects.get(pk = student).name
+        }
+
+        return render(request, 'customer/customer-order-details.html', context)
+
+    def post(self, request, pk, *args, **kwargs):
+        order = OrderModel.objects.get(pk=pk)
+        order.is_delivered = True
+        order.save()
+
+        context = {
+            'order': order
+        }
+
+        return redirect('userdashboard')
+
+    '''def test_func(self):
+        return self.request.user.groups.filter(name='Staff').exists()
+    '''
